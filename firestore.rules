@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isTeam() {
+      return request.auth != null && request.auth.uid == "REPLACE_WITH_SHARED_ACCOUNT_UID";
+    }
+    function validAudit(data) {
+      return data.person is string && data.person.size() > 0
+        && data.quantity is int && data.quantity > 0
+        && data.materialId is string;
+    }
+
+    match /materials/{id} {
+      allow read: if isTeam();
+      allow create: if isTeam() && request.resource.data.name is string
+        && request.resource.data.name.size() > 0 && request.resource.data.active == true;
+      allow update: if isTeam() && request.resource.data.name is string
+        && request.resource.data.name.size() > 0;
+      allow delete: if false;
+    }
+    match /boxes/{id} {
+      allow read: if isTeam();
+      allow create: if isTeam() && request.resource.data.name is string
+        && request.resource.data.code is string && request.resource.data.name.size() > 0
+        && request.resource.data.code.size() > 0 && request.resource.data.active == true;
+      allow update: if isTeam() && request.resource.data.name is string
+        && request.resource.data.code is string;
+      allow delete: if false;
+    }
+    match /stocks/{id} {
+      allow read: if isTeam();
+      allow create: if isTeam() && request.resource.data.quantity is int
+        && request.resource.data.quantity >= 0
+        && request.resource.data.materialId is string
+        && request.resource.data.boxId is string
+        && request.resource.data.lastOperationId is string
+        && getAfter(/databases/$(database)/documents/movements/$(request.resource.data.lastOperationId)).data.materialId == request.resource.data.materialId;
+      allow update: if isTeam()
+        && request.resource.data.materialId == resource.data.materialId
+        && request.resource.data.boxId == resource.data.boxId
+        && request.resource.data.quantity is int && request.resource.data.quantity >= 0
+        && request.resource.data.lastOperationId != resource.data.lastOperationId
+        && getAfter(/databases/$(database)/documents/movements/$(request.resource.data.lastOperationId)).data.materialId == request.resource.data.materialId;
+      allow delete: if false;
+    }
+    match /checkouts/{id} {
+      allow read: if isTeam();
+      allow create: if isTeam() && request.resource.data.initialQuantity is int
+        && request.resource.data.initialQuantity > 0
+        && request.resource.data.pendingQuantity == request.resource.data.initialQuantity
+        && request.resource.data.status == "open"
+        && request.resource.data.person is string && request.resource.data.person.size() > 0;
+      allow update: if isTeam()
+        && request.resource.data.materialId == resource.data.materialId
+        && request.resource.data.initialQuantity == resource.data.initialQuantity
+        && request.resource.data.pendingQuantity is int
+        && request.resource.data.pendingQuantity >= 0
+        && request.resource.data.pendingQuantity <= resource.data.pendingQuantity
+        && ((request.resource.data.pendingQuantity == 0 && request.resource.data.status == "closed")
+          || (request.resource.data.pendingQuantity > 0 && request.resource.data.status == "open"));
+      allow delete: if false;
+    }
+    match /movements/{id} {
+      allow read: if isTeam();
+      allow create: if isTeam() && validAudit(request.resource.data)
+        && request.resource.data.type in ["stock_in", "checkout", "return", "transfer", "write_off_stock", "write_off_checkout", "correction"];
+      allow update, delete: if false;
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

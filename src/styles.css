@@ -1,0 +1,12 @@
+:root { font-synthesis: none; text-rendering: optimizeLegibility; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+a { color: inherit; text-decoration: none; }
+.page-enter { animation: page-in .24s ease-out both; }
+@keyframes page-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+@media print {
+  body { background: #fff !important; }
+  body > #root { display: none !important; }
+  .no-print { display: none !important; }
+  .qr-print { display: flex !important; min-height: 95vh; align-items: center; justify-content: center; }
+}
