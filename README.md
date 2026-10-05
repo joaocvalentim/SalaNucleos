@@ -2,6 +2,8 @@
 
 Aplicação web mobile-first para gerir materiais distribuídos por caixas, com levantamentos, devoluções parciais, transferências, baixas, correções, histórico e QR Code por caixa.
 
+Para compreender a arquitetura, o estado atual, o que falta implementar e os principais riscos, consulta o [documento de passagem de contexto](HANDOFF.md).
+
 ## Desenvolvimento local
 
 Requisitos: Node.js 22 e npm.
